@@ -1,1 +1,631 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MEO資産度診断</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  :root{
+    --neon:#00d4ff;
+    --neon2:#7b2fff;
+    --gold:#c9a84c;
+    --bg:#000;
+    --white:#f0f0f0;
+    --gray:#aaa;
+  }
+  body{
+    background:var(--bg);
+    color:var(--white);
+    font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;
+    min-height:100vh;
+    overflow-x:hidden;
+  }
 
+  /* ===== SCREENS ===== */
+  .screen{
+    display:none;
+    min-height:100vh;
+    padding:40px 24px;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+  }
+  .screen.active{display:flex;}
+
+  /* ===== TOP ===== */
+  #top{text-align:center;gap:32px;}
+  .top-img{
+    width:min(320px,80vw);
+    height:min(320px,80vw);
+    object-fit:cover;
+    border:2px solid var(--gold);
+    display:block;
+    margin:0 auto;
+  }
+  .top-img-placeholder{
+    width:min(320px,80vw);
+    height:min(320px,80vw);
+    border:2px solid var(--gold);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--gold);
+    font-size:14px;
+    background:#0a0a0a;
+  }
+  .top-title{
+    font-size:clamp(22px,5vw,36px);
+    font-weight:900;
+    letter-spacing:.05em;
+    line-height:1.4;
+  }
+  .top-title span{color:var(--neon);}
+  .top-sub{
+    font-size:clamp(13px,3vw,17px);
+    color:var(--gray);
+    line-height:1.8;
+  }
+  .start-btn{
+    margin-top:8px;
+    padding:20px 48px;
+    border:2px solid var(--neon);
+    background:transparent;
+    color:var(--neon);
+    font-size:clamp(16px,4vw,22px);
+    font-weight:700;
+    letter-spacing:.1em;
+    cursor:pointer;
+    border-radius:4px;
+    transition:all .3s;
+    font-family:inherit;
+  }
+  .start-btn:hover{
+    background:rgba(0,212,255,.1);
+    box-shadow:0 0 20px var(--neon),0 0 40px rgba(0,212,255,.3);
+  }
+  .start-btn:active{
+    transform:scale(.97);
+    box-shadow:0 0 30px var(--neon),0 0 60px var(--neon);
+  }
+
+  /* ===== QUIZ ===== */
+  #quiz{gap:0;}
+  .quiz-inner{
+    width:100%;
+    max-width:640px;
+    animation:fadeIn .5s ease;
+  }
+  @keyframes fadeIn{
+    from{opacity:0;transform:translateY(16px);}
+    to{opacity:1;transform:translateY(0);}
+  }
+  .progress-bar{
+    width:100%;
+    height:4px;
+    background:#222;
+    border-radius:2px;
+    margin-bottom:36px;
+  }
+  .progress-fill{
+    height:100%;
+    background:linear-gradient(90deg,var(--neon),var(--neon2));
+    border-radius:2px;
+    transition:width .5s ease;
+  }
+  .q-num{
+    font-size:13px;
+    color:var(--gold);
+    letter-spacing:.15em;
+    margin-bottom:12px;
+    font-weight:700;
+  }
+  .q-text{
+    font-size:clamp(17px,4vw,24px);
+    font-weight:700;
+    line-height:1.6;
+    margin-bottom:36px;
+  }
+  .choices{
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+  }
+  .choice-btn{
+    padding:20px 24px;
+    border:1.5px solid #444;
+    background:transparent;
+    color:var(--white);
+    font-size:clamp(14px,3.5vw,17px);
+    font-family:inherit;
+    text-align:left;
+    cursor:pointer;
+    border-radius:6px;
+    line-height:1.6;
+    transition:all .25s;
+    position:relative;
+    overflow:hidden;
+  }
+  .choice-btn::before{
+    content:'';
+    position:absolute;
+    inset:0;
+    background:var(--neon);
+    opacity:0;
+    transition:opacity .2s;
+    pointer-events:none;
+  }
+  .choice-btn:hover{
+    border-color:var(--neon);
+    box-shadow:0 0 12px rgba(0,212,255,.3);
+  }
+  .choice-btn.flash{
+    border-color:var(--neon);
+    box-shadow:0 0 24px var(--neon),0 0 48px rgba(0,212,255,.4);
+    background:rgba(0,212,255,.08);
+  }
+  .choice-tag{
+    display:inline-block;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.1em;
+    padding:2px 8px;
+    border-radius:3px;
+    margin-right:10px;
+    vertical-align:middle;
+  }
+  .tag-a,
+  .tag-b,
+  .tag-c{
+    background:#5a5a5a;
+    color:#fff;
+    border:1px solid #7a7a7a;
+  }
+
+  /* ===== POINT HINT ===== */
+  .hint-box{
+    margin-top:28px;
+    padding:20px 24px;
+    border-left:3px solid var(--gold);
+    background:rgba(201,168,76,.06);
+    border-radius:0 6px 6px 0;
+    font-size:clamp(14px,3.5vw,17px);
+    line-height:1.8;
+    color:#e8d5a3;
+    animation:fadeIn .4s ease;
+  }
+  .hint-label{
+    font-size:12px;
+    color:var(--gold);
+    letter-spacing:.15em;
+    font-weight:700;
+    margin-bottom:8px;
+  }
+
+  /* ===== LOADING ===== */
+  #loading{
+    position:fixed;
+    inset:0;
+    background:#000;
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:32px;
+    z-index:100;
+  }
+  #loading.active{display:flex;}
+  .loader-ring{
+    width:80px;
+    height:80px;
+    border:3px solid #111;
+    border-top:3px solid var(--neon);
+    border-right:3px solid var(--neon2);
+    border-radius:50%;
+    animation:spin 1s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .loader-text{
+    font-size:clamp(15px,4vw,20px);
+    color:var(--neon);
+    letter-spacing:.05em;
+    text-align:center;
+    animation:pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{opacity:.5;}
+    50%{opacity:1;}
+  }
+  .loader-sub{
+    font-size:13px;
+    color:#555;
+    letter-spacing:.1em;
+  }
+  .scan-line{
+    width:200px;
+    height:2px;
+    background:linear-gradient(90deg,transparent,var(--neon),transparent);
+    animation:scan 1.5s ease-in-out infinite;
+  }
+  @keyframes scan{
+    0%{transform:scaleX(0);opacity:0;}
+    50%{transform:scaleX(1);opacity:1;}
+    100%{transform:scaleX(0);opacity:0;}
+  }
+
+  /* ===== RESULT ===== */
+  #result{gap:28px;text-align:center;}
+  .result-inner{
+    width:100%;
+    max-width:600px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:28px;
+    animation:fadeIn .6s ease;
+  }
+  .result-img{
+    width:min(280px,75vw);
+    height:min(280px,75vw);
+    object-fit:cover;
+    border:2px solid var(--gold);
+    display:block;
+  }
+  .result-img-placeholder{
+    width:min(280px,75vw);
+    height:min(280px,75vw);
+    border:2px solid var(--gold);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--gold);
+    font-size:13px;
+    background:#0a0a0a;
+  }
+  .result-rank{
+    font-size:clamp(48px,12vw,80px);
+    font-weight:900;
+    line-height:1;
+    background:linear-gradient(135deg,var(--neon),var(--neon2));
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    background-clip:text;
+  }
+  .result-score{
+    font-size:clamp(14px,3vw,18px);
+    color:var(--gray);
+    margin-top:-8px;
+  }
+  .result-title{
+    font-size:clamp(20px,5vw,30px);
+    font-weight:900;
+    color:var(--gold);
+    letter-spacing:.05em;
+    border:1.5px solid var(--gold);
+    padding:12px 28px;
+    border-radius:4px;
+  }
+  .result-msg{
+    font-size:clamp(15px,3.5vw,18px);
+    line-height:1.9;
+    color:var(--white);
+    text-align:left;
+    background:#0a0a0a;
+    border:1px solid #222;
+    padding:24px;
+    border-radius:8px;
+    width:100%;
+  }
+  .result-msg strong{color:var(--neon);}
+  .line-cta{
+    width:100%;
+    background:#06C755;
+    border:none;
+    border-radius:8px;
+    padding:24px 20px;
+    cursor:pointer;
+    text-decoration:none;
+    display:block;
+    transition:all .3s;
+  }
+  .line-cta:hover{
+    transform:translateY(-2px);
+    box-shadow:0 8px 32px rgba(6,199,85,.4);
+  }
+  .line-cta-inner{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:8px;
+  }
+  .line-cta-label{
+    font-size:13px;
+    color:rgba(255,255,255,.85);
+    letter-spacing:.05em;
+  }
+  .line-cta-main{
+    font-size:clamp(16px,4vw,22px);
+    font-weight:900;
+    color:#fff;
+    line-height:1.4;
+    text-align:center;
+  }
+  .line-cta-sub{
+    font-size:12px;
+    color:rgba(255,255,255,.7);
+  }
+  .retry-btn{
+    padding:16px 40px;
+    border:1.5px solid #444;
+    background:transparent;
+    color:var(--gray);
+    font-size:15px;
+    font-family:inherit;
+    cursor:pointer;
+    border-radius:4px;
+    transition:all .3s;
+    letter-spacing:.05em;
+  }
+  .retry-btn:hover{
+    border-color:#666;
+    color:var(--white);
+  }
+
+  b{font-weight:700;}
+</style>
+</head>
+<body>
+
+<!-- TOP -->
+<div id="top" class="screen active">
+  <div id="top-img-wrap">
+    <img src="top.png" class="top-img" alt="MEO診断">
+
+  </div>
+  <div class="top-title">あなたのサロンは<br><span>AIに見えていますか？</span></div>
+  <div class="top-sub">全12問・約3分｜MEO資産度診断<br>Googleマップ時代の「集客力」を数値化</div>
+  <button class="start-btn" onclick="startQuiz()">診断スタート →</button>
+</div>
+
+<!-- QUIZ -->
+<div id="quiz" class="screen">
+  <div class="quiz-inner" id="quiz-inner"></div>
+</div>
+
+<!-- LOADING -->
+<div id="loading">
+  <div class="loader-ring"></div>
+  <div class="scan-line"></div>
+  <div class="loader-text">AIがサロンの構造を解析中...</div>
+  <div class="loader-sub">ANALYZING MEO ASSET SCORE</div>
+</div>
+
+<!-- RESULT -->
+<div id="result" class="screen">
+  <div class="result-inner" id="result-inner"></div>
+</div>
+
+<script>
+const questions = [
+  {
+    num:1,
+    text:'もし今日インスタが消えたら、来月の新規予約は「ゼロ」になる恐怖がありますか？',
+    hint:'SNSに依存しない集客構造が、これからの時代に必須のサロン資産です。Googleマップやホームページからの自然流入こそ、働かなくても回る「仕組み」の入口。',
+    choices:[
+      {tag:'A',text:'いいえ。他のルート（HPやマップ）から予約が入る自信がある。',pt:10},
+      {tag:'B',text:'少し不安。インスタ経由の予約が半分以上を占めている。',pt:5},
+      {tag:'C',text:'はい。ビジネスが完全に止まってしまう。',pt:0},
+    ]
+  },
+  {
+    num:2,
+    text:'あなたのお店を表現する言葉に「癒やし」「隠れ家」などの抽象的な言葉ばかり使っていませんか？',
+    hint:'AIは「感性」ではなく「名詞」で検索します。「〇〇市 痩身エステ」「〇〇駅 小顔フェイシャル」のように、具体的な地名×施術名が、AIに届く言葉です。',
+    choices:[
+      {tag:'A',text:'「〇〇市 痩身」「〇〇駅 小顔」など、AIが認識しやすい具体的な名詞を多用している。',pt:10},
+      {tag:'B',text:'意識はしているが、つい雰囲気重視の言葉を選んでしまう。',pt:5},
+      {tag:'C',text:'雰囲気や感性だけで伝えている。',pt:0},
+    ]
+  },
+  {
+    num:3,
+    text:'あなたのお店のHPは、自分でお金を払って管理している「独自ドメイン」ですか？',
+    hint:'無料ブログや予約サイトは「借地」。独自ドメインだけが「自分の土地」です。育てるなら、いつか手放さなければいけない場所ではなく、永遠に自分のものになる土地を選んでください。',
+    choices:[
+      {tag:'A',text:'はい。自分の土地（ドメイン）を育てている。',pt:10},
+      {tag:'B',text:'無料ブログや、ホットペッパーなどの予約サイトをHP代わりにしている。',pt:5},
+      {tag:'C',text:'HP自体を持っていない。',pt:0},
+    ]
+  },
+  {
+    num:4,
+    text:'GoogleマップとHPに載せている「住所・電話番号・営業時間」は、1文字も狂わず一致していますか？',
+    hint:'AIは「NAP情報（名称・住所・電話番号）の一致度」でお店の信頼性を判断します。「1丁目」と「1-」のような表記ゆれも、AIにとっては別の情報。一文字の油断が信頼を下げます。',
+    choices:[
+      {tag:'A',text:'完璧に一致させている。',pt:10},
+      {tag:'B',text:'だいたい合っていると思うが、表記ゆれ（1-1か一丁目一番地）があるかも。',pt:5},
+      {tag:'C',text:'確認したことがない。',pt:0},
+    ]
+  },
+  {
+    num:5,
+    text:'Googleビジネスプロフィールの「最新情報」を、週に1回以上写真付きで投稿していますか？',
+    hint:'Googleマップは「更新し続けるお店」を優先して表示します。週1投稿は、AIに「このお店は生きている」と伝えるための最低ライン。放置は「閉店」と同じシグナルです。',
+    choices:[
+      {tag:'A',text:'はい。定期的にお店のアピールをAIに届けている。',pt:10},
+      {tag:'B',text:'月に1〜2回程度。',pt:5},
+      {tag:'C',text:'放置している。',pt:0},
+    ]
+  },
+  {
+    num:6,
+    text:'直近3ヶ月以内に、施術風景やビフォーアフターの写真を5枚以上アップしましたか？',
+    hint:'写真はAIが「このお店の専門性」を判断するデータです。古い写真しかないプロフィールは、古いお店という印象を与えます。最新の施術写真を、あなたのサロンの「証拠」として定期的に積み上げましょう。',
+    choices:[
+      {tag:'A',text:'はい。常に最新の情報を視覚的に届けている。',pt:10},
+      {tag:'B',text:'数枚は上げているが、古い写真も多い。',pt:5},
+      {tag:'C',text:'写真はほとんど変えていない。',pt:0},
+    ]
+  },
+  {
+    num:7,
+    text:'いただいた口コミに対して、定型文ではなく「プロの視点」を交えた返信をしていますか？',
+    hint:'口コミ返信の中にある「専門用語・施術名・地域名」は、AIへのアピール文です。「ありがとうございました」の一言は、チャンスの無駄遣い。プロの言葉で返すことが、次の新規客を引き寄せます。',
+    choices:[
+      {tag:'A',text:'はい。返信の内容自体もAIへのアピール材料だと知っている。',pt:10},
+      {tag:'B',text:'「ありがとうございました」程度の簡単な返信。',pt:5},
+      {tag:'C',text:'返信していない、または口コミが届いていない。',pt:0},
+    ]
+  },
+  {
+    num:8,
+    text:'スマホで自分のHPを開いたとき、ストレスなく3秒以内にすべて表示されますか？',
+    hint:'Googleは表示速度をランキングの重要指標にしています。「重い＝やる気のないサイト」とAIに判断され、検索順位が下がります。スマホで3秒以上かかるなら、今日から画像圧縮を始めてください。',
+    choices:[
+      {tag:'A',text:'爆速。画像も最適化している。',pt:10},
+      {tag:'B',text:'少し重いが、なんとか開く。',pt:5},
+      {tag:'C',text:'画像が重すぎて、なかなか表示されない。',pt:0},
+    ]
+  },
+  {
+    num:9,
+    text:'インスタを「集客の柱」ではなく、お客様があなたを信じるための「カタログ」として割り切れていますか？',
+    hint:'インスタが得意なのは「共感」であって「検索」ではありません。新規集客はGoogleマップ・HPで行い、インスタは既存客の信頼を深めるカタログに徹する——この役割分担がSNS疲れを消す処方箋です。',
+    choices:[
+      {tag:'A',text:'はい。役割を明確に分けて、無駄な投稿を減らしている。',pt:10},
+      {tag:'B',text:'集客のために必死に更新しているが、疲弊している。',pt:5},
+      {tag:'C',text:'インスタさえ頑張れば、なんとかなると思っている。',pt:0},
+    ]
+  },
+  {
+    num:10,
+    text:'地域の飲食店や、信頼できる他サイトからあなたのお店のHPへリンクを貼ってもらっていますか？',
+    hint:'被リンクは「地域の信頼の投票」です。地元ポータルサイトや近隣店舗に紹介されることが、AIから見た「地域における権威性」の証明。1件のリンクが、100件の投稿より価値を持つこともあります。',
+    choices:[
+      {tag:'A',text:'はい。地域で「信頼される店」としてネット上で紹介されている。',pt:10},
+      {tag:'B',text:'数カ所あるが、積極的には動いていない。',pt:5},
+      {tag:'C',text:'どこからもリンクされていない。',pt:0},
+    ]
+  },
+  {
+    num:11,
+    text:'「いい技術さえあれば、いつかお客様に見つけてもらえる」と、AIへの対策を後回しにしていませんか？',
+    hint:'技術は「サービスの品質」、MEOは「お店の存在証明」。この二つは競合しません。どんなに優れた技術も、AIに存在を知られなければ幻と同じ。技術の高さをAIに正しく伝えることも、プロの仕事です。',
+    choices:[
+      {tag:'A',text:'いいえ。技術が最高だからこそ、それをAIに正しく伝える義務があると考えている。',pt:10},
+      {tag:'B',text:'技術が大事だと思いたいが、デジタルの重要性も感じている。',pt:5},
+      {tag:'C',text:'技術さえ磨けば、広告やAIなんて不要だと思っている。',pt:0},
+    ]
+  },
+  {
+    num:12,
+    text:'今の集客活動は、やればやるほど「来年の自分が楽になる資産」として積み上がっている実感がありますか？',
+    hint:'SNS投稿は「消耗品」、MEO対策は「資産」。今日書いたGBPの投稿、口コミ返信、HP改善は、1年後も2年後もGoogleの検索結果でお店を守り続けます。労働を資産に変える設計こそが、経営の本質です。',
+    choices:[
+      {tag:'A',text:'はい。AIが学習して、勝手にお勧めしてくれる仕組みが育っている。',pt:10},
+      {tag:'B',text:'少しずつ溜まってはいるが、まだ毎日の労働に依存している。',pt:5},
+      {tag:'C',text:'全くない。毎日必死に泳がないと沈んでしまう。',pt:0},
+    ]
+  },
+];
+
+const ranks = [
+  {min:110,max:120,rank:'S',img:'rank_s.png',title:'地域独占・レコメンドの覇者',
+   msg:'おめでとうございます！あなたは<b>「自動集客の仕組み」</b>を完璧に手に入れた覇者です。AIが寝ている間も、理想のお客様を連れ続けてくれています。'},
+  {min:90,max:109,rank:'A',img:'rank_a.png',title:'エリアの人気店',
+   msg:'素晴らしい！地域の実力店として認知されています。あと一歩、ネット上の<b>「お店の骨組み」</b>を磨けば、Sランクも夢ではありません。'},
+  {min:60,max:89,rank:'B',img:'rank_b.png',title:'脱・SNS労働予備軍',
+   msg:'惜しい！設定はできていますが、AIへの<b>「お店のアピール（データ設計）」が弱いです。毎日のSNS投稿という終わりのない労働</b>から卒業するチャンスです。'},
+  {min:30,max:59,rank:'C',img:'rank_c.png',title:'埋もれた実力店',
+   msg:'技術はあるのに、AIには存在を知られていません。Googleマップという<b>「デジタルの地図」</b>に、あなたのお店を正しく載せましょう。'},
+  {min:0,max:29,rank:'D',img:'rank_d.png',title:'デジタル上の幽霊店',
+   msg:'緊急事態！ネット上では存在しないも同然です。今すぐ<b>「昔ながらのやり方」</b>を捨てて、<b>「未来に繋がるお店の設計」</b>を始めてください。'},
+];
+
+let cur=0, scores=[];
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el=document.getElementById(id);
+  if(el) el.classList.add('active');
+}
+
+function startQuiz(){
+  cur=0; scores=[];
+  showScreen('quiz');
+  renderQ();
+}
+
+function renderQ(){
+  const q=questions[cur];
+  const pct=Math.round((cur/questions.length)*100);
+  const html=`
+    <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+    <div class="q-num">QUESTION ${String(q.num).padStart(2,'0')} / 12</div>
+    <div class="q-text">${q.text}</div>
+    <div class="choices">
+      ${q.choices.map((c,i)=>`
+        <button class="choice-btn" onclick="answer(${c.pt},this,${i})" id="cb${i}">
+          <span class="choice-tag tag-${c.tag.toLowerCase()}">${c.tag}</span>${c.text}
+        </button>
+      `).join('')}
+    </div>
+    <div id="hint-area"></div>
+  `;
+  const inner=document.getElementById('quiz-inner');
+  inner.innerHTML=html;
+  inner.style.animation='none';
+  void inner.offsetWidth;
+  inner.style.animation='fadeIn .5s ease';
+}
+
+function answer(pt, btn, idx){
+  const q=questions[cur];
+  scores.push(pt);
+  document.querySelectorAll('.choice-btn').forEach(b=>{b.disabled=true;b.style.opacity='.4';});
+  btn.style.opacity='1';
+  btn.classList.add('flash');
+　 btn.blur();
+  const hintArea=document.getElementById('hint-area');
+  hintArea.innerHTML=`<div class="hint-box"><div class="hint-label">💡 プロのワンポイント解説</div>${q.hint}</div>`;
+  setTimeout(()=>{
+    cur++;
+    if(cur>=questions.length) showLoading();
+    else renderQ();
+  },1800);
+}
+
+function showLoading(){
+  document.getElementById('loading').classList.add('active');
+  setTimeout(()=>{
+    document.getElementById('loading').classList.remove('active');
+    showResult();
+  },3000);
+}
+
+function showResult(){
+  const total=scores.reduce((a,b)=>a+b,0);
+  const rank=ranks.find(r=>total>=r.min && total<=r.max) || ranks[ranks.length-1];
+  const inner=document.getElementById('result-inner');
+  inner.innerHTML=`
+    <div class="result-rank">RANK ${rank.rank}</div>
+    <div class="result-score">スコア：${total} / 120点</div>
+    <img src="${rank.img}" class="result-img" alt="${rank.title}">
+
+    <div class="result-title">${rank.title}</div>
+    <div class="result-msg">${rank.msg}</div>
+    <a href="https://lin.ee/woRCsiS" target="_blank" rel="noopener" class="line-cta">
+      <div class="line-cta-inner">
+        <div class="line-cta-label">🎁 無料プレゼント受け取り</div>
+        <div class="line-cta-main">LINE登録で特典スライド資料を受け取る →</div>
+        <div class="line-cta-sub">2026年最新版「AIがお勧めしたくなるお店の作り方」解説スライド</div>
+      </div>
+    </a>
+    <button class="retry-btn" onclick="startQuiz()">もう一度診断する</button>
+  `;
+  showScreen('result');
+}
+</script>
+
+</body>
+</html>
