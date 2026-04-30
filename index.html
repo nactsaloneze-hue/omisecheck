@@ -68,6 +68,7 @@
     border-radius:4px;
     transition:all .3s;
     font-family:inherit;
+    outline: none; /* 修正: 青枠防止 */
   }
   .start-btn:hover{
     background:rgba(0,212,255,.1);
@@ -130,15 +131,21 @@
     transition:all .25s;
     position:relative;
     overflow:hidden;
+    outline: none; /* 修正: 青枠防止 */
+    -webkit-tap-highlight-color: transparent; /* スマホ用タップハイライト消去 */
   }
   .choice-btn:hover{
     border-color:var(--neon);
     box-shadow:0 0 12px rgba(0,212,255,.3);
   }
+  /* 修正：クリック時の青枠を徹底排除 */
+  .choice-btn:focus {
+    outline: none;
+  }
   .choice-btn.flash{
-    border-color:var(--neon);
-    box-shadow:0 0 24px var(--neon),0 0 48px rgba(0,212,255,.4);
-    background:rgba(0,212,255,.08);
+    border-color:var(--neon) !important;
+    box-shadow:0 0 24px var(--neon),0 0 48px rgba(0,212,255,.4) !important;
+    background:rgba(0,212,255,.08) !important;
   }
   .choice-tag{
     display:inline-block;
@@ -284,6 +291,7 @@
     transition: all .3s;
     display: block;
     box-shadow: 0 4px 15px rgba(6,199,85,0.2);
+    outline: none;
   }
   .line-cta:hover {
     transform: translateY(-2px);
@@ -328,6 +336,7 @@
     border-radius:4px;
     transition:all .3s;
     letter-spacing:.05em;
+    outline: none;
   }
   .retry-btn:hover{
     border-color:#666;
@@ -475,7 +484,7 @@ const questions = [
   },
   {
     num:12,
-    text:'今の活動は、やればやるほど「来年の自分が楽になる資産」になっていますか？',
+    text:'今の活動は、やればやるほど「来年の自分が楽になる資産に」なっていますか？',
     hint:'SNS投稿は消耗品、MEO対策は資産です。',
     choices:[
       {tag:'A',text:'はい。仕組みが育っている実感がある。',pt:10},
@@ -498,6 +507,7 @@ let cur=0, scores=[];
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0); // 修正：画面切り替え時に上部にスクロール
 }
 
 function startQuiz(){
@@ -518,10 +528,13 @@ function renderQ(){
     </div>
     <div id="hint-area"></div>
   `;
-  document.getElementById('quiz-inner').innerHTML=html;
+  const container = document.getElementById('quiz-inner');
+  container.innerHTML=html;
+  window.scrollTo(0,0); // 修正：設問更新時に上部へ
 }
 
 function answer(pt, btn){
+  btn.blur(); // 修正：クリックした瞬間にフォーカスを外して青枠を消す
   scores.push(pt);
   document.querySelectorAll('.choice-btn').forEach(b=>b.disabled=true);
   btn.classList.add('flash');
@@ -530,7 +543,7 @@ function answer(pt, btn){
     cur++;
     if(cur>=questions.length) showLoading();
     else renderQ();
-  },1800);
+  },1500);
 }
 
 function showLoading(){
